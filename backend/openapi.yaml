@@ -1,0 +1,39 @@
+openapi: 3.0.3
+info:
+  title: market4u API
+  version: 1.0.0
+  description: API RESTful para gestão de produtos, vendas e margem.
+servers: [{url: https://your-project.supabase.co/functions/v1}]
+security: [{bearerAuth: []}]
+paths:
+  /api/products:
+    get:
+      summary: Lista produtos com busca e filtros
+      parameters: [{name: search, in: query, schema: {type: string}}, {name: category, in: query, schema: {type: string}}]
+      responses: {'200': {description: Produtos, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Product'}}}}}}
+    post:
+      summary: Cadastra produto
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ProductInput'}}}}
+      responses: {'201': {description: Criado}}
+  /api/sales:
+    post:
+      summary: Registra venda e baixa estoque atomicamente
+      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [market_produto_id, market_quantidade], properties: {market_produto_id: {type: string, format: uuid}, market_quantidade: {type: integer, minimum: 1}}}}}}
+      responses: {'201': {description: Venda criada}, '409': {description: Estoque insuficiente}}
+  /api/analytics/profit:
+    get:
+      summary: Comparativo de faturamento, CMV e lucro
+      parameters: [{name: from, in: query, required: true, schema: {type: string, format: date}}, {name: to, in: query, required: true, schema: {type: string, format: date}}, {name: category, in: query, schema: {type: string}}]
+      responses: {'200': {description: Série financeira}}
+components:
+  securitySchemes: {bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}}
+  schemas:
+    Erro:
+      type: object
+      required: [sucesso, codigo_erro, mensagem]
+      properties:
+        sucesso: {type: boolean, example: false}
+        codigo_erro: {type: string, example: ESTOQUE_INSUFICIENTE}
+        mensagem: {type: string, example: Não há estoque suficiente para concluir esta venda.}
+    ProductInput: {type: object, required: [market_nome, market_sku, market_categoria, market_quantidade_estoque, market_preco_custo, market_preco_venda], properties: {market_nome: {type: string, maxLength: 160}, market_sku: {type: string}, market_categoria: {type: string}, market_quantidade_estoque: {type: integer, minimum: 0}, market_preco_custo: {type: number, minimum: 0}, market_preco_venda: {type: number, minimum: 0}, market_mercado_id: {type: string, format: uuid}}}
+    Product: {allOf: [{$ref: '#/components/schemas/ProductInput'}, {type: object, properties: {market_id: {type: string, format: uuid}, market_criado_em: {type: string, format: date-time}}}]}

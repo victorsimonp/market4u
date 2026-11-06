@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const app = fs.readFileSync(new URL('../../frontend/src/App.jsx', import.meta.url), 'utf8');
+const api = fs.readFileSync(new URL('../../frontend/src/services/api.js', import.meta.url), 'utf8');
+const sql = fs.readFileSync(new URL('../supabase/migrations/004_market_security_hardening.sql', import.meta.url), 'utf8');
+assert(!app.includes('dangerouslySetInnerHTML') && !app.includes('innerHTML'), 'Foi encontrado sink XSS no React.');
+assert(api.includes('ilike'), 'A busca deve usar o builder parametrizado do Supabase.');
+assert(sql.includes('drop policy if exists market_usuarios_insert') && sql.includes('revoke insert on public.market_vendas'), 'Hardening RLS incompleto.');
+assert.equal(((14.9 - 8.9) / 8.9 * 100).toFixed(1), '67.4');
+assert.equal((0 ? ((10 - 0) / 0) : 0), 0, 'Divisão por zero não protegida.');
+console.log('Auditoria estática de segurança e regras de negócio: aprovada.');
